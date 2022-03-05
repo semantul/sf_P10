@@ -8,13 +8,13 @@
      dest: "/etc/yum.repos.d/docker-ce.repo"
     when: ansible_os_family == "RedHat"
 
-  - name: Add Docker GPG apt Key
+  - name: Add Docker GPG apt Key Debian
     ansible.builtin.apt_key:
      url: "https://download.docker.com/linux/ubuntu/gpg"
      state: "present"
     when: ansible_os_family == "Debian"
 
-  - name: Add Docker Repository
+  - name: Add Docker Repository Debian
     ansible.builtin.apt_repository:
      repo: "deb https://download.docker.com/linux/ubuntu focal stable"
      state: "present"
