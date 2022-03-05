@@ -1,0 +1,75 @@
+---
+- hosts: all
+
+  tasks:
+  - name: Install ansible to VM1
+    ansible.builtin.apt:
+     name: "ansible"
+     state: "latest"
+    when: ansible_host == 'sf-project10-vm1'
+
+  - name: Change root directory
+    ansible.builtin.lineinfile:
+     path: "/etc/ansible/ansible.cfg"
+     regexp: "#host_key_checking = False"
+     line: "host_key_checking = False"
+    when: ansible_host == 'sf-project10-vm1'
+
+  - name: Create ansible user for Debian
+    ansible.builtin.user:
+     name: "ansible"
+     shell: /bin/bash
+     groups: "ssh"
+     append: "yes"
+    when: ansible_os_family == 'Debian'
+
+  - name: Create ansible user for RHEL
+    ansible.builtin.user:
+     name: "ansible"
+     groups: "sshd"
+     append: "yes"
+    when: ansible_os_family == 'RedHat'
+
+  - name: Create ssh dir
+    ansible.builtin.file:
+     dest: "~ansible/.ssh"
+     state: "directory"
+     owner: "ansible"
+     group: "ansible"
+     mode: "0700"
+
+  - name: Copy key-file id_rsa
+    ansible.builtin.copy:
+     src: "../file/id_rsa"
+     dest: "~ansible/.ssh/id_rsa"
+     owner: "ansible"
+     group: "ansible"
+     mode: "0600"
+    when: ansible_host == 'sf-project10-vm1'
+
+  - name: Copy key-file id_rsa.pub
+    ansible.builtin.copy:
+     src: "../file/id_rsa.pub"
+     dest: "~ansible/.ssh/id_rsa.pub"
+     owner: "ansible"
+     group: "ansible"
+     mode: "0600"
+    when: ansible_host == 'sf-project10-vm1'
+
+  - name: Copy key-file authorized_key
+    ansible.builtin.copy:
+     src: "../file/id_rsa.pub"
+     dest: "~ansible/.ssh/authorized_keys"
+     owner: "ansible"
+     group: "ansible"
+     mode: "0600"
+
+  - name: Copy inventory file
+    ansible.builtin.copy:
+     src: "../file/hosts"
+     dest: "/etc/ansible/hosts"
+     owner: "root"
+     group: "root"
+     mode: "0644"
+     backup: true
+    when: ansible_host == 'sf-project10-vm1'

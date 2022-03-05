@@ -1,0 +1,78 @@
+---
+- hosts: app
+
+  tasks:
+  - name: Add Docker repo RHEL
+    ansible.builtin.get_url:
+     url: "https://download.docker.com/linux/centos/docker-ce.repo"
+     dest: "/etc/yum.repos.d/docker-ce.repo"
+    when: ansible_os_family == "RedHat"
+
+  - name: Add Docker GPG apt Key
+    ansible.builtin.apt_key:
+     url: "https://download.docker.com/linux/ubuntu/gpg"
+     state: "present"
+    when: ansible_os_family == "Debian"
+
+  - name: Add Docker Repository
+    ansible.builtin.apt_repository:
+     repo: "deb https://download.docker.com/linux/ubuntu focal stable"
+     state: "present"
+    when: ansible_os_family == "Debian"
+
+  - name: Install Docker
+    ansible.builtin.package:
+     name: "docker-ce"
+     state: "latest"
+
+  - name: Start Docker service
+    ansible.builtin.service:
+     name: "docker"
+     state: "started"
+     enabled: true
+
+############################################################################
+
+- hosts: database
+
+  tasks:
+  - name: Add postgresql apt repository key
+    ansible.builtin.apt_key:
+     url: "https://www.postgresql.org/media/keys/ACCC4CF8.asc"
+     state: "present"
+
+  - name: Add postgresql apt repository
+    ansible.builtin.apt_repository:
+     repo: "deb http://apt.postgresql.org/pub/repos/apt/ {{ ansible_distribution_release }}-pgdg main"
+     state: "present"
+     update_cache: true
+
+  - name: Install postgresql
+    ansible.builtin.apt:
+     name: "postgresql-{{ pg_version }}"
+     state: "present"
+
+  - name: Stat postgresql directory
+    ansible.builtin.stat: path=/var/lib/postgresql
+    register: pgdata
+
+  - block:
+    - name: Stop PG service
+      ansible.builtin.service:
+       name: "postgresql"
+       state: "stopped"
+
+    - name: Change PGDATA directory
+      ansible.builtin.lineinfile:
+       path: "/etc/postgresql/{{ pg_version }}/main/postgresql.conf"
+       regexp: "data_directory = '/var/lib/postgresql/{{ pg_version }}/main'          # use data in another directory"
+       line: "data_directory = '{{ data_dir }}/{{ pg_version }}/main'          # use data in another directory"
+
+    - name: Move PGDATA directory
+      ansible.builtin.command: "mv /var/lib/postgresql {{ data_dir }}"
+
+    - name: Start PG service
+      ansible.builtin.service:
+       name: "postgresql"
+       state: "started"
+    when: pgdata.stat.exists

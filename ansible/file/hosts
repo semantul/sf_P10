@@ -1,0 +1,21 @@
+[app]
+vm2	ansible_host=sf-project10-vm2	ansible_ssh_host=10.128.0.42
+vm3	ansible_host=sf-project10-vm3	ansible_ssh_host=10.128.0.43
+
+[database]
+vm1	ansible_host=sf-project10-vm1	ansible_ssh_host=10.128.0.41
+
+[web]
+vm1	ansible_host=sf-project10-vm1	ansible_ssh_host=10.128.0.41
+
+[vms:children]
+app
+database
+web
+
+[vms:vars]
+ansible_ssh_user=ansible
+
+[database:vars]
+pg_version=13
+data_dir=/var/lib/pgsql
